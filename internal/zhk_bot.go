@@ -10,11 +10,22 @@ import (
 
 const unrecognisedText = "Неизвестная команда. Попробуйте /help."
 
+type Command interface {
+	Exec(update *tgbotapi.Update) (tgbotapi.MessageConfig, bool)
+}
+
+type CommandCreator interface {
+	Text() string
+	Create() Command
+}
+
 type zhkBot struct {
-	cfg    *goconf.Config
-	api    *tgbotapi.BotAPI
-	admins []int64
-	stop   chan interface{}
+	cfg      *goconf.Config
+	api      *tgbotapi.BotAPI
+	admins   []int64
+	creators map[string]CommandCreator
+	cmds     map[int64]Command
+	stop     chan interface{}
 }
 
 func loadConfig() *goconf.Config {
@@ -30,11 +41,15 @@ func loadConfig() *goconf.Config {
 
 func NewBot() *zhkBot {
 	bot := &zhkBot{
-		cfg:  loadConfig(),
-		stop: make(chan interface{}),
+		cfg:      loadConfig(),
+		stop:     make(chan interface{}),
+		creators: make(map[string]CommandCreator),
+		cmds:     make(map[int64]Command),
 	}
 
 	bot.admins = bot.configInt64s("telegram.admins")
+
+	bot.addCreator(newHelpCommandCreator())
 
 	return bot
 }
@@ -72,6 +87,10 @@ func (bot *zhkBot) configInt64s(field string) []int64 {
 	return values
 }
 
+func (bot *zhkBot) addCreator(cc CommandCreator) {
+	bot.creators[cc.Text()] = cc
+}
+
 func (bot *zhkBot) Run() {
 	token := bot.configString("telegram.token")
 	if len(token) == 0 {
@@ -101,12 +120,11 @@ func (bot *zhkBot) Run() {
 		case <-bot.stop:
 			return
 		case upd := <-updates:
-			if upd.Message == nil || !upd.Message.IsCommand() {
-				bot.sendMessageNow(upd.Message.Chat.ID, unrecognisedText)
+			if upd.Message == nil {
 				continue
 			}
 
-			bot.command(upd)
+			bot.handleMessage(upd)
 		}
 	}
 }
@@ -120,33 +138,54 @@ func (bot *zhkBot) Stop() {
 	close(bot.stop)
 }
 
-func (bot *zhkBot) command(upd tgbotapi.Update) {
-	cmd := upd.Message.Command()
-	log.Printf("%s sent a command %s", upd.Message.From.UserName, cmd)
+func (bot *zhkBot) handleMessage(upd tgbotapi.Update) {
+	chatID := upd.Message.Chat.ID
+	var command Command
 
-	var reply string
-	switch cmd {
-	case "help":
-		reply = bot.help(&upd)
-	default:
-		reply = unrecognisedText
+	if upd.Message.IsCommand() {
+		cmd := upd.Message.Command()
+		log.Printf("%s sent a command %s", upd.Message.From.UserName, cmd)
+
+		cc := bot.creators[cmd]
+		if cc == nil {
+			bot.replyText(upd, unrecognisedText)
+			return
+		}
+
+		_, hasOld := bot.cmds[chatID]
+		if hasOld {
+			msg := tgbotapi.NewMessage(chatID, "Отмена.")
+			msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+			bot.sendMessage(msg)
+		}
+
+		command = cc.Create()
+	} else {
+		command = bot.cmds[chatID]
+		if command == nil {
+			bot.replyText(upd, unrecognisedText)
+			return
+		}
 	}
 
-	bot.sendMessageNow(upd.Message.Chat.ID, reply)
+	msg, hasNext := command.Exec(&upd)
+	if hasNext {
+		bot.cmds[chatID] = command
+	} else {
+		delete(bot.cmds, chatID)
+	}
+
+	bot.sendMessage(msg)
 }
 
-func (bot *zhkBot) sendMessageNow(chat int64, text string) {
-	msg := tgbotapi.NewMessage(chat, text)
-	msg.DisableWebPagePreview = true
-	msg.ParseMode = "HTML"
+func (bot *zhkBot) replyText(upd tgbotapi.Update, text string) {
+	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+	bot.sendMessage(msg)
+}
+
+func (bot *zhkBot) sendMessage(msg tgbotapi.MessageConfig) {
 	_, err := bot.api.Send(msg)
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func (bot *zhkBot) help(_ *tgbotapi.Update) string {
-	text := `(помощь по командам бота)`
-
-	return text
 }
