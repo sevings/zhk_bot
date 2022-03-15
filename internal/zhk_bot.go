@@ -50,6 +50,8 @@ func NewBot() *zhkBot {
 	bot.admins = bot.configInt64s("telegram.admins")
 
 	bot.addCreator(newHelpCommandCreator())
+	bot.addCreator(newAddFlatCommandCreator())
+	bot.addCreator(newRmFlatCommandCreator())
 
 	return bot
 }
