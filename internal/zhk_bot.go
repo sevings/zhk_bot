@@ -52,6 +52,7 @@ func NewBot() *zhkBot {
 	bot.addCreator(newHelpCommandCreator())
 	bot.addCreator(newAddFlatCommandCreator())
 	bot.addCreator(newRmFlatCommandCreator())
+	bot.addCreator(newSetLiftStateCommandCreator())
 
 	return bot
 }
