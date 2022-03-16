@@ -6,6 +6,7 @@ const (
 	floorCount    = maxFloor - minFloor + 1
 	buildingCount = 4
 	minFlat       = 1
+	liftCount     = 3
 )
 
 var (

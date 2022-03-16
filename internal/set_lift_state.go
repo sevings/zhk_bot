@@ -3,84 +3,45 @@ package internal
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"strings"
+	"strconv"
 )
 
-var liftStates []string
 var liftStateMarkup tgbotapi.ReplyKeyboardMarkup
 
 func init() {
-	liftStates = []string{"Неизвестно", "Работает", "Авария", "На обслуживании", "Пожар"}
-
-	liftStateMarkup = tgbotapi.NewReplyKeyboard()
+	liftStateMarkup = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("0"),
+			tgbotapi.NewKeyboardButton("1"),
+			tgbotapi.NewKeyboardButton("2"),
+			tgbotapi.NewKeyboardButton("3"),
+		))
 	liftStateMarkup.OneTimeKeyboard = true
-	for _, state := range liftStates {
-		row := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(state))
-		liftStateMarkup.Keyboard = append(liftStateMarkup.Keyboard, row)
-	}
 }
 
 type setLeftStateCommand struct {
-	largeFreightElevatorState   int
-	smallFreightElevatorState   int
-	smallPassengerElevatorState int
 }
 
 func (cmd *setLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool) {
 	building := getBuilding(683)
 
 	if upd.Message.IsCommand() {
-		return cmd.setStateMessage(upd, building, "большого грузового")
+		text := fmt.Sprintf("Сколько лифтов работает в %d корпусе на данный момент?", building)
+		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+		msg.ReplyMarkup = liftStateMarkup
+		return msg, true
 	}
 
-	stateStr := upd.Message.Text
-
-	state := -1
-	for i, s := range liftStates {
-		if s == stateStr {
-			state = i
-			break
-		}
-	}
-
-	if state < 0 {
-		text := fmt.Sprintf("Неверный статус.")
+	n, err := strconv.ParseInt(upd.Message.Text, 10, 32)
+	if err != nil || n < 0 || n > liftCount {
+		text := fmt.Sprintf("Неверное количество.")
 		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 		return msg, false
 	}
 
-	if cmd.largeFreightElevatorState < 0 {
-		cmd.largeFreightElevatorState = state
-		return cmd.setStateMessage(upd, building, "малого грузового")
-	}
-
-	if cmd.smallFreightElevatorState < 0 {
-		cmd.smallFreightElevatorState = state
-		return cmd.setStateMessage(upd, building, "малого пассажирского")
-	}
-
-	cmd.smallPassengerElevatorState = state
-
-	text := fmt.Sprintf(`Установлены статусы лифтов.
-Большой грузовой лифт: %s.
-Малый грузовой лифт: %s.
-Малый пассажирский лифт: %s.
-`,
-		strings.ToLower(liftStates[cmd.largeFreightElevatorState]),
-		strings.ToLower(liftStates[cmd.smallFreightElevatorState]),
-		strings.ToLower(liftStates[cmd.smallPassengerElevatorState]),
-	)
-
+	text := fmt.Sprintf("Сохранено.")
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 	return msg, false
-}
-
-func (cmd *setLeftStateCommand) setStateMessage(upd *tgbotapi.Update, building int, lift string) (tgbotapi.MessageConfig, bool) {
-	text := fmt.Sprintf("Выберите статус <b>%s</b> лифта в %d корпусе.", lift, building)
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
-	msg.ParseMode = "HTML"
-	msg.ReplyMarkup = liftStateMarkup
-	return msg, true
 }
 
 type setLeftStateCommandCreator struct {
@@ -91,7 +52,7 @@ func (cc *setLeftStateCommandCreator) Text() string {
 }
 
 func (cc *setLeftStateCommandCreator) Create() Command {
-	return &setLeftStateCommand{-1, -1, -1}
+	return &setLeftStateCommand{}
 }
 
 func newSetLiftStateCommandCreator() CommandCreator {
