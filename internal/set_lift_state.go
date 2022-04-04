@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"sort"
 	"strconv"
 )
 
@@ -20,16 +21,38 @@ func init() {
 }
 
 type setLeftStateCommand struct {
+	db       *botDB
+	building int
 }
 
 func (cmd *setLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool) {
-	building := getBuilding(683)
-
 	if upd.Message.IsCommand() {
-		text := fmt.Sprintf("Сколько лифтов работает в %d корпусе на данный момент?", building)
-		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
-		msg.ReplyMarkup = liftStateMarkup
-		return msg, true
+		buildings := cmd.getBuildings(upd)
+
+		if len(buildings) == 0 {
+			text := fmt.Sprintf("Сначала добавьте хотя бы одну квартиру.")
+			msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+			return msg, false
+		}
+
+		if len(buildings) > 1 {
+			return cmd.askBuilding(upd, buildings)
+		}
+
+		cmd.building = buildings[0]
+		return cmd.askState(upd)
+	}
+
+	if cmd.building < 0 {
+		n, err := strconv.ParseInt(upd.Message.Text, 10, 32)
+		if err != nil || n < 0 || n > buildingCount {
+			text := fmt.Sprintf("Неверный корпус.")
+			msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+			return msg, false
+		}
+
+		cmd.building = int(n)
+		return cmd.askState(upd)
 	}
 
 	n, err := strconv.ParseInt(upd.Message.Text, 10, 32)
@@ -39,12 +62,60 @@ func (cmd *setLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConf
 		return msg, false
 	}
 
+	cmd.db.setLiftState(upd.Message.Chat.ID, cmd.building, int(n))
+
 	text := fmt.Sprintf("Сохранено.")
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 	return msg, false
 }
 
+func (cmd *setLeftStateCommand) getBuildings(upd *tgbotapi.Update) []int {
+	flats := cmd.db.getUserFlats(upd.Message.Chat.ID)
+
+	var buildings []int
+	for _, flat := range flats {
+		building := getBuilding(flat)
+
+		contains := false
+		for _, b := range buildings {
+			if b == building {
+				contains = true
+				break
+			}
+		}
+		if !contains {
+			buildings = append(buildings, building)
+		}
+	}
+
+	sort.Ints(buildings[:])
+
+	return buildings
+}
+
+func (cmd *setLeftStateCommand) askBuilding(upd *tgbotapi.Update, buildings []int) (tgbotapi.MessageConfig, bool) {
+	markup := tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow())
+	markup.OneTimeKeyboard = true
+	for _, b := range buildings {
+		btn := tgbotapi.NewKeyboardButton(strconv.Itoa(b))
+		markup.Keyboard[0] = append(markup.Keyboard[0], btn)
+	}
+
+	text := fmt.Sprintf("Выберите корпус.")
+	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+	msg.ReplyMarkup = markup
+	return msg, true
+}
+
+func (cmd *setLeftStateCommand) askState(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool) {
+	text := fmt.Sprintf("Сколько лифтов работает в %d корпусе на данный момент?", cmd.building)
+	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+	msg.ReplyMarkup = liftStateMarkup
+	return msg, true
+}
+
 type setLeftStateCommandCreator struct {
+	db *botDB
 }
 
 func (cc *setLeftStateCommandCreator) Text() string {
@@ -52,9 +123,9 @@ func (cc *setLeftStateCommandCreator) Text() string {
 }
 
 func (cc *setLeftStateCommandCreator) Create() Command {
-	return &setLeftStateCommand{}
+	return &setLeftStateCommand{db: cc.db, building: -1}
 }
 
-func newSetLiftStateCommandCreator() CommandCreator {
-	return &setLeftStateCommandCreator{}
+func newSetLiftStateCommandCreator(db *botDB) CommandCreator {
+	return &setLeftStateCommandCreator{db: db}
 }

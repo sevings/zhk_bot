@@ -7,6 +7,7 @@ import (
 )
 
 type addFlatCommand struct {
+	db *botDB
 }
 
 func (cmd *addFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool) {
@@ -24,6 +25,8 @@ func (cmd *addFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, b
 		return msg, false
 	}
 
+	cmd.db.addUserFlat(upd.Message.Chat.ID, flat)
+
 	floor := getFloor(flat)
 	building := getBuilding(flat)
 	text := fmt.Sprintf("Корпус %d, этаж %d, квартира %d. Сохранено.", building, floor, flat)
@@ -32,6 +35,7 @@ func (cmd *addFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, b
 }
 
 type addFlatCommandCreator struct {
+	db *botDB
 }
 
 func (cc *addFlatCommandCreator) Text() string {
@@ -39,9 +43,9 @@ func (cc *addFlatCommandCreator) Text() string {
 }
 
 func (cc *addFlatCommandCreator) Create() Command {
-	return &addFlatCommand{}
+	return &addFlatCommand{db: cc.db}
 }
 
-func newAddFlatCommandCreator() CommandCreator {
-	return &addFlatCommandCreator{}
+func newAddFlatCommandCreator(db *botDB) CommandCreator {
+	return &addFlatCommandCreator{db: db}
 }

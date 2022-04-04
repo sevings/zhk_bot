@@ -7,11 +7,18 @@ import (
 )
 
 type rmFlatCommand struct {
+	db *botDB
 }
 
 func (cmd *rmFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool) {
 	if upd.Message.IsCommand() {
-		flats := []int{5, 683, 792}
+		flats := cmd.db.getUserFlats(upd.Message.Chat.ID)
+		if len(flats) == 0 {
+			text := fmt.Sprintf("Нет добавленных квартир.")
+			msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
+			return msg, false
+		}
+
 		text := fmt.Sprintf("Выберите квартиру для удаления.")
 
 		markup := tgbotapi.NewReplyKeyboard()
@@ -34,12 +41,15 @@ func (cmd *rmFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bo
 		return msg, false
 	}
 
+	cmd.db.removeUserFlat(upd.Message.Chat.ID, flat)
+
 	text := fmt.Sprintf("Квартира %d удалена.", flat)
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 	return msg, false
 }
 
 type rmFlatCommandCreator struct {
+	db *botDB
 }
 
 func (cc *rmFlatCommandCreator) Text() string {
@@ -47,9 +57,9 @@ func (cc *rmFlatCommandCreator) Text() string {
 }
 
 func (cc *rmFlatCommandCreator) Create() Command {
-	return &rmFlatCommand{}
+	return &rmFlatCommand{db: cc.db}
 }
 
-func newRmFlatCommandCreator() CommandCreator {
-	return &rmFlatCommandCreator{}
+func newRmFlatCommandCreator(db *botDB) CommandCreator {
+	return &rmFlatCommandCreator{db: db}
 }

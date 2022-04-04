@@ -22,6 +22,7 @@ type CommandCreator interface {
 type zhkBot struct {
 	cfg      *goconf.Config
 	api      *tgbotapi.BotAPI
+	db       *botDB
 	admins   []int64
 	creators map[string]CommandCreator
 	cmds     map[int64]Command
@@ -47,13 +48,20 @@ func NewBot() *zhkBot {
 		cmds:     make(map[int64]Command),
 	}
 
+	db, err := openBotDB(bot.configString("database.source"))
+	if err != nil {
+		log.Println(err)
+		return bot
+	}
+	bot.db = db
+
 	bot.admins = bot.configInt64s("telegram.admins")
 
 	bot.addCreator(newHelpCommandCreator())
-	bot.addCreator(newAddFlatCommandCreator())
-	bot.addCreator(newRmFlatCommandCreator())
-	bot.addCreator(newSetLiftStateCommandCreator())
-	bot.addCreator(newGetLiftStateCommandCreator())
+	bot.addCreator(newAddFlatCommandCreator(db))
+	bot.addCreator(newRmFlatCommandCreator(db))
+	bot.addCreator(newSetLiftStateCommandCreator(db))
+	bot.addCreator(newGetLiftStateCommandCreator(db))
 
 	return bot
 }
