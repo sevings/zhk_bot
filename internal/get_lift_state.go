@@ -18,9 +18,7 @@ func (cmd *getLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConf
 		buildings := cmd.getBuildings(upd)
 
 		if len(buildings) == 0 {
-			text := fmt.Sprintf("Сначала добавьте хотя бы одну квартиру.")
-			msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
-			return msg, false
+			buildings = []int{1, 2, 3, 4}
 		}
 
 		if len(buildings) > 1 {
