@@ -46,7 +46,7 @@ func (cmd *getLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConf
 		return msg, false
 	}
 
-	text := fmt.Sprintf("В подъезде %d", cmd.building)
+	text := fmt.Sprintf("В подъезде %d ", cmd.building)
 	switch n {
 	case 0:
 		text += "не работает <b>ни один</b> лифт."
