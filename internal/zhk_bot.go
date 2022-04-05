@@ -192,6 +192,7 @@ func (bot *zhkBot) handleMessage(upd tgbotapi.Update) {
 		bot.cmds[chatID] = command
 	} else {
 		delete(bot.cmds, chatID)
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
 	bot.sendMessage(msg)
