@@ -15,7 +15,7 @@ type Command interface {
 }
 
 type CommandCreator interface {
-	Text() string
+	BotCommand() tgbotapi.BotCommand
 	Create() Command
 }
 
@@ -100,7 +100,7 @@ func (bot *zhkBot) configInt64s(field string) []int64 {
 }
 
 func (bot *zhkBot) addCreator(cc CommandCreator) {
-	bot.creators[cc.Text()] = cc
+	bot.creators[cc.BotCommand().Command] = cc
 }
 
 func (bot *zhkBot) Run() {
@@ -118,6 +118,16 @@ func (bot *zhkBot) Run() {
 	bot.api = api
 
 	log.Printf("Running Telegram bot %s\n", api.Self.UserName)
+
+	var cmds []tgbotapi.BotCommand
+	for _, cc := range bot.creators {
+		cmds = append(cmds, cc.BotCommand())
+	}
+	cmdCfg := tgbotapi.NewSetMyCommands(cmds...)
+	_, err = bot.api.Request(cmdCfg)
+	if err != nil {
+		log.Println(err)
+	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60

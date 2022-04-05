@@ -118,8 +118,11 @@ type setLeftStateCommandCreator struct {
 	db *botDB
 }
 
-func (cc *setLeftStateCommandCreator) Text() string {
-	return "set_lift_state"
+func (cc *setLeftStateCommandCreator) BotCommand() tgbotapi.BotCommand {
+	return tgbotapi.BotCommand{
+		Command:     "set_lift_state",
+		Description: "установить состояние лифтов",
+	}
 }
 
 func (cc *setLeftStateCommandCreator) Create() Command {

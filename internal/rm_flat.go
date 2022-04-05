@@ -52,8 +52,11 @@ type rmFlatCommandCreator struct {
 	db *botDB
 }
 
-func (cc *rmFlatCommandCreator) Text() string {
-	return "rm_flat"
+func (cc *rmFlatCommandCreator) BotCommand() tgbotapi.BotCommand {
+	return tgbotapi.BotCommand{
+		Command:     "rm_flat",
+		Description: "убрать квартиру из списка",
+	}
 }
 
 func (cc *rmFlatCommandCreator) Create() Command {

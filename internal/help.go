@@ -17,8 +17,11 @@ func (cmd *helpCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, bool
 type helpCommandCreator struct {
 }
 
-func (cc *helpCommandCreator) Text() string {
-	return "help"
+func (cc *helpCommandCreator) BotCommand() tgbotapi.BotCommand {
+	return tgbotapi.BotCommand{
+		Command:     "help",
+		Description: "получить краткую справку",
+	}
 }
 
 func (cc *helpCommandCreator) Create() Command {

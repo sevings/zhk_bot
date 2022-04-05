@@ -38,8 +38,11 @@ type addFlatCommandCreator struct {
 	db *botDB
 }
 
-func (cc *addFlatCommandCreator) Text() string {
-	return "add_flat"
+func (cc *addFlatCommandCreator) BotCommand() tgbotapi.BotCommand {
+	return tgbotapi.BotCommand{
+		Command:     "add_flat",
+		Description: "добавить квартиру проживания",
+	}
 }
 
 func (cc *addFlatCommandCreator) Create() Command {
