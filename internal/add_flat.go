@@ -29,7 +29,7 @@ func (cmd *addFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, b
 
 	floor := getFloor(flat)
 	building := getBuilding(flat)
-	text := fmt.Sprintf("Корпус %d, этаж %d, квартира %d. Сохранено.", building, floor, flat)
+	text := fmt.Sprintf("Подъезд %d, этаж %d, квартира %d. Сохранено.", building, floor, flat)
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 	return msg, false
 }

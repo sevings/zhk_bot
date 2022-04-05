@@ -33,7 +33,7 @@ func (cmd *getLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConf
 	if cmd.building < 0 {
 		n, err := strconv.ParseInt(upd.Message.Text, 10, 32)
 		if err != nil || n < 0 || n > buildingCount {
-			text := fmt.Sprintf("Неверный корпус.")
+			text := fmt.Sprintf("Неверный подъезд.")
 			msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 			return msg, false
 		}
@@ -48,7 +48,7 @@ func (cmd *getLeftStateCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConf
 		return msg, false
 	}
 
-	text := fmt.Sprintf("В %d корпусе ", cmd.building)
+	text := fmt.Sprintf("В подъезде %d", cmd.building)
 	switch n {
 	case 0:
 		text += "не работает <b>ни один</b> лифт."
@@ -99,7 +99,7 @@ func (cmd *getLeftStateCommand) askBuilding(upd *tgbotapi.Update, buildings []in
 		markup.Keyboard[0] = append(markup.Keyboard[0], btn)
 	}
 
-	text := fmt.Sprintf("Выберите корпус.")
+	text := fmt.Sprintf("Выберите подъезд.")
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, text)
 	msg.ReplyMarkup = markup
 	return msg, true
