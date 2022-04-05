@@ -14,7 +14,7 @@ type botDB struct {
 
 type user struct {
 	ID     int64      `gorm:"not null;primaryKey;unique;index"`
-	Name   string     `gorm:"not null;unique"`
+	Name   string     `gorm:"not null"`
 	flats  []userFlat `gorm:"foreignKey:id;references:user_id"`
 	states []liftState
 }
