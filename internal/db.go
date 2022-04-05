@@ -13,20 +13,20 @@ type botDB struct {
 }
 
 type user struct {
-	ID     int64  `gorm:"not null;primaryKey;unique;index"`
-	Name   string `gorm:"not null;unique"`
-	flats  []userFlat
+	ID     int64      `gorm:"not null;primaryKey;unique;index"`
+	Name   string     `gorm:"not null;unique"`
+	flats  []userFlat `gorm:"foreignKey:id;references:user_id"`
 	states []liftState
 }
 
 type userFlat struct {
-	UserID int64 `gorm:"not null;index"`
-	Flat   int   `gorm:"not null;index"`
+	UserID int64 `gorm:"primaryKey;autoIncrement:false"`
+	Flat   int   `gorm:"primaryKey;autoIncrement:false"`
 }
 
 type liftState struct {
 	ID        uint      `gorm:"not null;primaryKey;unique;autoIncrement"`
-	UpdatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null;index"`
 	Building  int       `gorm:"not null"`
 	Working   int       `gorm:"not null"`
 	UserID    int64     `gorm:"not null"`
