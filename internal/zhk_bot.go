@@ -1,7 +1,7 @@
 package internal
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	goconf "github.com/zpatrick/go-config"
 	"log"
 	"strconv"
@@ -122,10 +122,7 @@ func (bot *zhkBot) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := bot.api.GetUpdatesChan(u)
-	if err != nil {
-		log.Println(err)
-	}
+	updates := bot.api.GetUpdatesChan(u)
 
 	for {
 		select {
