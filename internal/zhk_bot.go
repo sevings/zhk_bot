@@ -57,6 +57,7 @@ func NewBot() *zhkBot {
 
 	bot.admins = bot.configInt64s("telegram.admins")
 
+	bot.addCreator(newStartCommandCreator())
 	bot.addCreator(newHelpCommandCreator())
 	bot.addCreator(newAddFlatCommandCreator(db))
 	bot.addCreator(newRmFlatCommandCreator(db))
@@ -121,7 +122,10 @@ func (bot *zhkBot) Run() {
 
 	var cmds []tgbotapi.BotCommand
 	for _, cc := range bot.creators {
-		cmds = append(cmds, cc.BotCommand())
+		bc := cc.BotCommand()
+		if len(bc.Description) > 0 {
+			cmds = append(cmds, bc)
+		}
 	}
 	cmdCfg := tgbotapi.NewSetMyCommands(cmds...)
 	_, err = bot.api.Request(cmdCfg)
