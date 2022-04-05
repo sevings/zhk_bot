@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
