@@ -3,6 +3,7 @@ package internal
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"log"
 	"time"
 )
@@ -51,8 +52,11 @@ func checkGormError(tx *gorm.DB) {
 	}
 }
 
-func (db *botDB) addUserFlat(userID int64, flat int) {
-	res := db.db.Create(&userFlat{
+func (db *botDB) addUserFlat(userID int64, name string, flat int) {
+	res := db.db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&user{ID: userID, Name: name})
+	checkGormError(res)
+
+	res = db.db.Create(&userFlat{
 		UserID: userID,
 		Flat:   flat,
 	})

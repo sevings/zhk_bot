@@ -25,7 +25,7 @@ func (cmd *addFlatCommand) Exec(upd *tgbotapi.Update) (tgbotapi.MessageConfig, b
 		return msg, false
 	}
 
-	cmd.db.addUserFlat(upd.Message.Chat.ID, flat)
+	cmd.db.addUserFlat(upd.Message.Chat.ID, upd.Message.Chat.UserName, flat)
 
 	floor := getFloor(flat)
 	building := getBuilding(flat)
