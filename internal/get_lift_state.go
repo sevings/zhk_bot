@@ -137,29 +137,29 @@ func formatDate(date time.Time) string {
 	var str = date.Format("_2")
 
 	switch date.Month() {
-	case 0:
-		str += " января"
 	case 1:
-		str += " февраля"
+		str += " января"
 	case 2:
-		str += " марта"
+		str += " февраля"
 	case 3:
-		str += " апреля"
+		str += " марта"
 	case 4:
-		str += " мая"
+		str += " апреля"
 	case 5:
-		str += " июня"
+		str += " мая"
 	case 6:
-		str += " июля"
+		str += " июня"
 	case 7:
-		str += " августа"
+		str += " июля"
 	case 8:
-		str += " сентября"
+		str += " августа"
 	case 9:
-		str += " октября"
+		str += " сентября"
 	case 10:
-		str += " ноября"
+		str += " октября"
 	case 11:
+		str += " ноября"
+	case 12:
 		str += " декабря"
 	}
 
