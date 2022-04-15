@@ -57,13 +57,6 @@ func NewBot() *zhkBot {
 
 	bot.admins = bot.configInt64s("telegram.admins")
 
-	bot.addCreator(newStartCommandCreator())
-	bot.addCreator(newHelpCommandCreator())
-	bot.addCreator(newAddFlatCommandCreator(db))
-	bot.addCreator(newRmFlatCommandCreator(db))
-	bot.addCreator(newSetLiftStateCommandCreator(db))
-	bot.addCreator(newGetLiftStateCommandCreator(db))
-
 	return bot
 }
 
@@ -100,10 +93,6 @@ func (bot *zhkBot) configInt64s(field string) []int64 {
 	return values
 }
 
-func (bot *zhkBot) addCreator(cc CommandCreator) {
-	bot.creators[cc.BotCommand().Command] = cc
-}
-
 func (bot *zhkBot) Run() {
 	token := bot.configString("telegram.token")
 	if len(token) == 0 {
@@ -117,21 +106,9 @@ func (bot *zhkBot) Run() {
 	}
 
 	bot.api = api
+	bot.setCommands()
 
 	log.Printf("Running Telegram bot %s\n", api.Self.UserName)
-
-	var cmds []tgbotapi.BotCommand
-	for _, cc := range bot.creators {
-		bc := cc.BotCommand()
-		if len(bc.Description) > 0 {
-			cmds = append(cmds, bc)
-		}
-	}
-	cmdCfg := tgbotapi.NewSetMyCommands(cmds...)
-	_, err = bot.api.Request(cmdCfg)
-	if err != nil {
-		log.Println(err)
-	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -149,6 +126,33 @@ func (bot *zhkBot) Run() {
 
 			bot.handleMessage(upd)
 		}
+	}
+}
+
+func (bot *zhkBot) setCommands() {
+	var cmds []tgbotapi.BotCommand
+
+	addCreator := func(cc CommandCreator) {
+		bc := cc.BotCommand()
+
+		bot.creators[bc.Command] = cc
+
+		if len(bc.Description) > 0 {
+			cmds = append(cmds, bc)
+		}
+	}
+
+	addCreator(newGetLiftStateCommandCreator(bot.db))
+	addCreator(newSetLiftStateCommandCreator(bot.db))
+	addCreator(newAddFlatCommandCreator(bot.db))
+	addCreator(newRmFlatCommandCreator(bot.db))
+	addCreator(newHelpCommandCreator())
+	addCreator(newStartCommandCreator())
+
+	cmdCfg := tgbotapi.NewSetMyCommands(cmds...)
+	_, err := bot.api.Request(cmdCfg)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
