@@ -32,6 +32,12 @@ type liftState struct {
 	UserID    int64     `gorm:"not null"`
 }
 
+type botStat struct {
+	users      int64
+	flats      int64
+	liftStates int64
+}
+
 func openBotDB(source string) (*botDB, error) {
 	db, err := gorm.Open(sqlite.Open(source), &gorm.Config{})
 	if err != nil {
@@ -95,4 +101,14 @@ func (db *botDB) getLiftState(building int) (int, time.Time) {
 	checkGormError(res)
 
 	return state.Working, state.UpdatedAt
+}
+
+func (db *botDB) getBotStat() botStat {
+	var bs botStat
+
+	db.db.Model(&user{}).Count(&bs.users)
+	db.db.Model(&userFlat{}).Count(&bs.flats)
+	db.db.Model(&liftState{}).Count(&bs.liftStates)
+
+	return bs
 }

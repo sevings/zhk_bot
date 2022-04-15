@@ -147,6 +147,7 @@ func (bot *zhkBot) setCommands() {
 	addCreator(newAddFlatCommandCreator(bot.db))
 	addCreator(newRmFlatCommandCreator(bot.db))
 	addCreator(newHelpCommandCreator())
+	addCreator(newBotStatCommandCreator(bot.db))
 	addCreator(newStartCommandCreator())
 
 	cmdCfg := tgbotapi.NewSetMyCommands(cmds...)
